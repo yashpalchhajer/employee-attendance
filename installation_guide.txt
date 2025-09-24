@@ -1,0 +1,97 @@
+EMPLOYEE ATTENDANCE SYSTEM - QUICK INSTALLATION GUIDE
+=====================================================
+
+REQUIREMENTS:
+- PHP 7.0 or higher
+- MySQL 5.6 or higher
+- Web server (Apache/Nginx)
+- SSL certificate (recommended for location features)
+
+INSTALLATION STEPS:
+==================
+
+1. UPLOAD FILES:
+   - Extract this ZIP file
+   - Upload ALL files to your web server directory
+   - Maintain the folder structure as provided
+
+2. CREATE DATABASE:
+   - Log into your hosting control panel (cPanel, phpMyAdmin, etc.)
+   - Create a new MySQL database named: employee_attendance
+   - Import the file: database.sql into your new database
+   - Note down your database credentials
+
+3. CONFIGURE DATABASE CONNECTION:
+   - Open the file: config.php
+   - Update these lines with your database details:
+     
+     define('DB_HOST', 'localhost');           // Usually 'localhost'
+     define('DB_USERNAME', 'your_username');   // Your DB username
+     define('DB_PASSWORD', 'your_password');   // Your DB password
+     define('DB_NAME', 'employee_attendance'); // Database name
+
+4. SET FILE PERMISSIONS:
+   - Set folder permissions to 755
+   - Set file permissions to 644
+   - Ensure web server can read all files
+
+5. ACCESS YOUR SYSTEM:
+   - Open your website in browser
+   - You'll be redirected to login page
+   - System is ready to use!
+
+DEFAULT LOGIN CREDENTIALS:
+=========================
+
+ADMIN ACCOUNT:
+Username: admin
+Password: admin123
+
+SAMPLE EMPLOYEE ACCOUNT:
+Username: john_doe
+Password: password123
+
+IMPORTANT: Change these passwords immediately after first login!
+
+FEATURES:
+=========
+✓ Employee login and attendance marking
+✓ GPS location tracking with address
+✓ Admin panel for employee management
+✓ Attendance reports and statistics
+✓ Responsive design for mobile/desktop
+✓ One attendance per day per employee
+
+TROUBLESHOOTING:
+===============
+
+PROBLEM: "Database connection failed"
+SOLUTION: Check database credentials in config.php
+
+PROBLEM: "Location not working"
+SOLUTION: Use HTTPS and allow browser location permissions
+
+PROBLEM: "Can't login"
+SOLUTION: Ensure database.sql was imported correctly
+
+PROBLEM: "Permission denied errors"
+SOLUTION: Check file permissions on server
+
+SUPPORT:
+========
+- Read README.md for detailed documentation
+- Check that all files were uploaded correctly
+- Ensure database was created and imported
+- Verify PHP and MySQL versions meet requirements
+
+SECURITY TIPS:
+=============
+- Change default passwords immediately
+- Use strong passwords for database and admin accounts
+- Enable HTTPS/SSL on your domain
+- Keep PHP and MySQL updated
+- Regular database backups
+
+For detailed documentation, see README.md file.
+
+Good luck with your Employee Attendance System!
