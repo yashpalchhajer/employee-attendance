@@ -1,11 +1,20 @@
 <?php
-// Database configuration
-define('DB_HOST', 'localhost');
-define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '');
-define('DB_NAME', 'employee_attendance');
+$secretsPath = __DIR__ . '/env.php'; 
+if (!file_exists($secretsPath)) {
+    die('Configuration error: missing enb.php file.');
+}
+require_once $secretsPath;
 
-// Create connection
+$required = [
+    'DB_HOST','DB_USERNAME','DB_PASSWORD','DB_NAME',
+    'MAIL_HOST','MAIL_USERNAME','MAIL_PASSWORD','MAIL_PORT','MAIL_FROM','MAIL_FROM_NAME','BASE_URL'
+];
+foreach ($required as $c) {
+    if (!defined($c)) {
+        die("Configuration error: missing constant {$c} in enb.php.");
+    }
+}
+
 try {
     $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USERNAME, DB_PASSWORD);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -18,25 +27,19 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Function to check if user is logged in
+// Helper functions
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
-
-// Function to check if user is admin
 function isAdmin() {
     return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 }
-
-// Function to redirect to login if not logged in
 function requireLogin() {
     if (!isLoggedIn()) {
         header("Location: login.php");
         exit();
     }
 }
-
-// Function to redirect to login if not admin
 function requireAdmin() {
     if (!isAdmin()) {
         header("Location: dashboard.php");

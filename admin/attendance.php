@@ -50,7 +50,7 @@ foreach ($activeEmployees as $employee) {
             <h1>View Attendance</h1>
             <div class="user-info">
                 Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?> | 
-                <a href="../logout.php">Logout</a>
+                <a href="logout.php">Logout</a>
             </div>
         </header>
         

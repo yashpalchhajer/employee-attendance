@@ -8,7 +8,7 @@ $stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
 $stmt->execute([$_SESSION['user_id'], $today]);
 $todayAttendance = $stmt->fetch();
 
-// Get recent attendance records
+// Recent attendance records
 $stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? ORDER BY date DESC, time DESC LIMIT 10");
 $stmt->execute([$_SESSION['user_id']]);
 $recentAttendance = $stmt->fetchAll();
@@ -38,13 +38,29 @@ $recentAttendance = $stmt->fetchAll();
                 
                 <?php if ($todayAttendance): ?>
                     <div class="attendance-marked">
-                        <h3>✓ Attendance Already Marked for Today</h3>
+                        <h3> Attendance Already Marked for Today</h3>
                         <p><strong>Time:</strong> <?php echo date('h:i:s A', strtotime($todayAttendance['time'])); ?></p>
-                        <p><strong>Location:</strong> <?php echo htmlspecialchars($todayAttendance['location_address'] ?: 'Location not available'); ?></p>
+                        <p>
+                            <strong>Location:</strong> 
+                            <?php 
+                                if ($todayAttendance['location_address']) {
+                                    echo htmlspecialchars($todayAttendance['location_address']);
+                                } elseif ($todayAttendance['latitude'] && $todayAttendance['longitude']) {
+                                    echo "Coordinates: {$todayAttendance['latitude']}, {$todayAttendance['longitude']}";
+                                } else {
+                                    echo 'Location not available';
+                                }
+                            ?>
+                        </p>
                     </div>
                 <?php else: ?>
                     <div class="attendance-form">
-                        <button id="markAttendanceBtn" class="btn-primary btn-large">Mark Attendance</button>
+                        <form id="attendanceForm" method="POST">
+                            <input type="hidden" name="latitude" id="latitude">
+                            <input type="hidden" name="longitude" id="longitude">
+                            <input type="hidden" name="location_address" id="location_address">
+                            <button type="button" id="markAttendanceBtn" class="btn-primary btn-large">Mark Attendance</button>
+                        </form>
                         <div id="locationStatus" class="location-status"></div>
                         <div id="attendanceResult" class="result"></div>
                     </div>
@@ -67,7 +83,17 @@ $recentAttendance = $stmt->fetchAll();
                                 <tr>
                                     <td><?php echo date('M d, Y', strtotime($record['date'])); ?></td>
                                     <td><?php echo date('h:i:s A', strtotime($record['time'])); ?></td>
-                                    <td><?php echo htmlspecialchars($record['location_address'] ?: 'N/A'); ?></td>
+                                    <td>
+                                        <?php 
+                                            if ($record['location_address']) {
+                                                echo htmlspecialchars($record['location_address']);
+                                            } elseif ($record['latitude'] && $record['longitude']) {
+                                                echo "Coordinates: {$record['latitude']}, {$record['longitude']}";
+                                            } else {
+                                                echo 'N/A';
+                                            }
+                                        ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -79,6 +105,7 @@ $recentAttendance = $stmt->fetchAll();
         </div>
     </div>
     
+    <!-- JS file separate -->
     <script src="assets/js/dashboard.js"></script>
 </body>
 </html>

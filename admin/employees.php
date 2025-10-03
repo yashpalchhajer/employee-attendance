@@ -8,16 +8,36 @@ $message = '';
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_employee'])) {
-        $username = $_POST['username'];
-        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $full_name = $_POST['full_name'];
-        
-        try {
-            $stmt = $pdo->prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, 'employee')");
-            $stmt->execute([$username, $password, $full_name]);
-            $message = "Employee added successfully!";
-        } catch (Exception $e) {
-            $message = "Error: Username already exists or database error.";
+        // collect and sanitize
+        $username  = trim($_POST['username']);
+        $password_plain = $_POST['password'];
+        $full_name = trim($_POST['full_name']);
+        $email_raw = trim($_POST['email'] ?? '');
+
+        // basic validation
+        if ($username === '' || $password_plain === '' || $full_name === '' || $email_raw === '') {
+            $message = "Please fill all fields.";
+        } elseif (!filter_var($email_raw, FILTER_VALIDATE_EMAIL)) {
+            $message = "Please enter a valid email address.";
+        } else {
+            $email = $email_raw;
+            $password = password_hash($password_plain, PASSWORD_DEFAULT);
+
+            // check for existing username/email
+            $check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ? OR email = ?");
+            $check->execute([$username, $email]);
+            if ($check->fetchColumn() > 0) {
+                $message = "Username or Email already exists.";
+            } else {
+                try {
+                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'employee')");
+                    $stmt->execute([$username, $email, $password, $full_name]);
+                    $message = "Employee added successfully!";
+                } catch (Exception $e) {
+                    // log $e->getMessage() if you have logging
+                    $message = "Error: Could not add employee.";
+                }
+            }
         }
     }
     
@@ -82,6 +102,10 @@ $employees = $stmt->fetchAll();
                             <input type="text" id="username" name="username" required>
                         </div>
                         <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
                             <label for="password">Password:</label>
                             <input type="password" id="password" name="password" required>
                         </div>
@@ -104,6 +128,7 @@ $employees = $stmt->fetchAll();
                             <tr>
                                 <th>ID</th>
                                 <th>Username</th>
+                                <th>Email</th>
                                 <th>Full Name</th>
                                 <th>Status</th>
                                 <th>Created</th>
@@ -115,6 +140,7 @@ $employees = $stmt->fetchAll();
                                 <tr>
                                     <td><?php echo $employee['id']; ?></td>
                                     <td><?php echo htmlspecialchars($employee['username']); ?></td>
+                                    <td><?php echo htmlspecialchars($employee['email'] ?? ''); ?></td>
                                     <td><?php echo htmlspecialchars($employee['full_name']); ?></td>
                                     <td>
                                         <span class="status-badge status-<?php echo $employee['status']; ?>">

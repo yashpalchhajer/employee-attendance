@@ -6,25 +6,58 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    
+
     if (!empty($username) && !empty($password)) {
         $stmt = $pdo->prepare("SELECT id, username, password, full_name, role, status FROM users WHERE username = ? AND status = 'active'");
         $stmt->execute([$username]);
         $user = $stmt->fetch();
-        
 
-        if ($user && (password_verify($password, $user['password']))) {
+        if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role'] = $user['role'];
-            
+
+
+            $user_id = $user['id'];
+            $today = date('Y-m-d');
+
+
+            $checkStmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ? LIMIT 1");
+            $checkStmt->execute([$user_id, $today]);
+            $attendance = $checkStmt->fetch();
+
+            if (!$attendance) {
+
+                try {
+                    $insertStmt = $pdo->prepare("INSERT INTO attendance (user_id, date, check_in) VALUES (?, ?, NOW())");
+                    $insertStmt->execute([$user_id, $today]);
+                } catch (PDOException $e) {
+
+                    if ($e->getCode() != 23000) { 
+                        throw $e;
+                    }
+                }
+            } elseif ($attendance['check_out'] != NULL) {
+
+                try {
+                    $insertStmt = $pdo->prepare("INSERT INTO attendance (user_id, date, check_in) VALUES (?, ?, NOW())");
+                    $insertStmt->execute([$user_id, $today]);
+                } catch (PDOException $e) {
+                    if ($e->getCode() != 23000) {
+                        throw $e;
+                    }
+                }
+            }
+
+
             if ($user['role'] == 'admin') {
                 header("Location: admin/dashboard.php");
             } else {
                 header("Location: dashboard.php");
             }
             exit();
+
         } else {
             $error = "Invalid username or password";
         }
@@ -33,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Redirect if already logged in
+
 if (isLoggedIn()) {
     if ($_SESSION['role'] == 'admin') {
         header("Location: admin/dashboard.php");
@@ -59,20 +92,23 @@ if (isLoggedIn()) {
                 <?php if ($error): ?>
                     <div class="error"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
-                
+
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password" required>
                 </div>
-                
+
+                <div class="text-end mb-3">
+                    <a href="forget_password.php" class="text-decoration-none">Forgot Password?</a>
+                </div>
+
                 <button type="submit" class="btn-primary">Login</button>
             </form>
-            
         </div>
     </div>
 </body>
