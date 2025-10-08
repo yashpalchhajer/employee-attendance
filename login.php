@@ -2,62 +2,31 @@
 require_once 'config.php';
 
 $error = '';
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
 
     if (!empty($username) && !empty($password)) {
-        $stmt = $pdo->prepare("SELECT id, username, password, full_name, role, status FROM users WHERE username = ? AND status = 'active'");
+        $stmt = $pdo->prepare("SELECT id, username, password, full_name, role, status 
+                               FROM users 
+                               WHERE username = ? AND status = 'active'");
         $stmt->execute([$username]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
+            
+            $_SESSION['user_id']   = $user['id'];
+            $_SESSION['username']  = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['role'] = $user['role'];
+            $_SESSION['role']      = $user['role'];
 
-
-            $user_id = $user['id'];
-            $today = date('Y-m-d');
-
-
-            $checkStmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ? LIMIT 1");
-            $checkStmt->execute([$user_id, $today]);
-            $attendance = $checkStmt->fetch();
-
-            if (!$attendance) {
-
-                try {
-                    $insertStmt = $pdo->prepare("INSERT INTO attendance (user_id, date, check_in) VALUES (?, ?, NOW())");
-                    $insertStmt->execute([$user_id, $today]);
-                } catch (PDOException $e) {
-
-                    if ($e->getCode() != 23000) { 
-                        throw $e;
-                    }
-                }
-            } elseif ($attendance['check_out'] != NULL) {
-
-                try {
-                    $insertStmt = $pdo->prepare("INSERT INTO attendance (user_id, date, check_in) VALUES (?, ?, NOW())");
-                    $insertStmt->execute([$user_id, $today]);
-                } catch (PDOException $e) {
-                    if ($e->getCode() != 23000) {
-                        throw $e;
-                    }
-                }
-            }
-
-
+            
             if ($user['role'] == 'admin') {
                 header("Location: admin/dashboard.php");
             } else {
                 header("Location: dashboard.php");
             }
             exit();
-
         } else {
             $error = "Invalid username or password";
         }

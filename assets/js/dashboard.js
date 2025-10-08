@@ -1,129 +1,90 @@
-// Dashboard JavaScript for Employee Attendance System
+console.log("dashboard.js loaded");
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Update current time every second
-    updateCurrentTime();
-    setInterval(updateCurrentTime, 1000);
-
-    // Handle attendance marking
-    const markAttendanceBtn = document.getElementById('markAttendanceBtn');
-    if (markAttendanceBtn) {
-        markAttendanceBtn.addEventListener('click', markAttendance);
-    }
-});
-
-function updateCurrentTime() {
-    const currentTimeElement = document.getElementById('currentTime');
-    if (currentTimeElement) {
-        const now = new Date();
-        const options = {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        };
-        currentTimeElement.textContent = now.toLocaleDateString('en-US', options);
-    }
-}
-
-function markAttendance() {
-    const btn = document.getElementById('markAttendanceBtn');
+document.addEventListener('DOMContentLoaded', () => {
+    const latitudeInput = document.getElementById('latitude');
+    const longitudeInput = document.getElementById('longitude');
+    const locationAddressInput = document.getElementById('location_address');
     const locationStatus = document.getElementById('locationStatus');
-    const attendanceResult = document.getElementById('attendanceResult');
+    const resultDiv = document.getElementById('attendanceResult');
 
-    btn.disabled = true;
-    btn.textContent = 'Getting Location...';
-    locationStatus.className = 'location-status getting-location';
-    locationStatus.textContent = 'Getting your location...';
-    attendanceResult.textContent = '';
-    attendanceResult.className = 'result';
 
     if (navigator.geolocation) {
+        locationStatus.textContent = "Fetching location...";
         navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const latitude = position.coords.latitude;
-                const longitude = position.coords.longitude;
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
 
-                // Show coordinates directly
-                locationStatus.className = 'location-status location-found';
-                locationStatus.textContent = `Coordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-                console.log('Latitude:', latitude, 'Longitude:', longitude); // Debug
+                latitudeInput.value = lat;
+                longitudeInput.value = lon;
 
-                // For now, send coordinates as "location_address"
-                const locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-                sendAttendanceData(latitude, longitude, locationAddress);
+                locationStatus.textContent = `✓ Location acquired (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
 
-            },
-            function(error) {
-                let errorMessage = 'Unable to get location. ';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage += 'Please allow location access and try again.';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage += 'Location information is unavailable.';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage += 'Location request timed out.';
-                        break;
-                    default:
-                        errorMessage += 'An unknown error occurred.';
-                        break;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
+                        headers: { 'User-Agent': 'AttendanceApp/1.0 (your_email@example.com)' }
+                    });
+                    const data = await response.json();
+                    locationAddressInput.value = data.display_name || `${lat}, ${lon}`;
+                } catch (err) {
+                    console.warn("Reverse geocoding failed:", err);
+                    locationAddressInput.value = `${lat}, ${lon}`;
                 }
-                locationStatus.className = 'location-status location-error';
-                locationStatus.textContent = errorMessage;
-                btn.disabled = false;
-                btn.textContent = 'Mark Attendance';
             },
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 } // Increased timeout
+            (error) => {
+                locationStatus.textContent = "⚠ Unable to get location.";
+                console.warn("Geolocation error:", error);
+            }
         );
     } else {
-        locationStatus.className = 'location-status location-error';
-        locationStatus.textContent = 'Geolocation is not supported by this browser.';
-        btn.disabled = false;
-        btn.textContent = 'Mark Attendance';
+        locationStatus.textContent = "⚠ Geolocation not supported.";
     }
-}
 
-function sendAttendanceData(latitude, longitude, locationAddress) {
-    const btn = document.getElementById('markAttendanceBtn');
-    const attendanceResult = document.getElementById('attendanceResult');
+    
+    document.querySelectorAll('button[data-action]').forEach(button => {
+        button.addEventListener('click', async function () {
+            const action = this.getAttribute('data-action');
 
-    btn.textContent = 'Marking Attendance...';
+            if (!action) {
+                resultDiv.innerHTML = `<p class="error">✗ Action not found</p>`;
+                return;
+            }
 
-    const data = { latitude, longitude, location_address: locationAddress };
+            
+            const allButtons = document.querySelectorAll('button[data-action]');
+            allButtons.forEach(btn => btn.disabled = true);
 
-    fetch('mark_attendance.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            attendanceResult.className = 'result success';
-            attendanceResult.innerHTML = `
-                <strong>✓ ${data.message}</strong><br>
-                Time: ${data.time}<br>
-                Date: ${data.date}<br>
-                Location (Lat,Long): ${locationAddress}
-            `;
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            attendanceResult.className = 'result error';
-            attendanceResult.textContent = '✗ ' + data.message;
-            btn.disabled = false;
-            btn.textContent = 'Mark Attendance';
-        }
-    })
-    .catch(() => {
-        attendanceResult.className = 'result error';
-        attendanceResult.textContent = '✗ Network error. Please try again.';
-        btn.disabled = false;
-        btn.textContent = 'Mark Attendance';
+            const payload = {
+                action: action,
+                latitude: latitudeInput.value,
+                longitude: longitudeInput.value,
+                location_address: locationAddressInput.value
+            };
+
+            resultDiv.innerHTML = `<p class="info"> Processing ${action.replace('_', ' ')}...</p>`;
+
+            try {
+                const res = await fetch('mark_attendance.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    resultDiv.innerHTML = `<p class="success"> ${result.message}</p>`;
+                    setTimeout(() => location.reload(), 1500); 
+                } else {
+                    resultDiv.innerHTML = `<p class="error"> ${result.message}</p>`;
+                    allButtons.forEach(btn => btn.disabled = false);
+                }
+
+            } catch (err) {
+                resultDiv.innerHTML = `<p class="error"> Server error. Try again.</p>`;
+                console.error('Fetch error:', err);
+                allButtons.forEach(btn => btn.disabled = false);
+            }
+        });
     });
-}
+});
