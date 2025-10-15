@@ -7,7 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationStatus = document.getElementById('locationStatus');
     const resultDiv = document.getElementById('attendanceResult');
 
+    
+    function updateCurrentTime() {
+        const currentTimeElement = document.getElementById('currentTime');
+        if (currentTimeElement) {
+            const nowUtc = new Date();
+            const istOffset = 5.5 * 60; 
+            const nowIst = new Date(nowUtc.getTime() + istOffset * 60 * 1000);
+            const options = { 
+                weekday:'long', year:'numeric', month:'long', day:'numeric',
+                hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true
+            };
+            currentTimeElement.textContent = nowIst.toLocaleString('en-US', options);
+        }
+    }
+    setInterval(updateCurrentTime, 1000);
+    updateCurrentTime();
+    
 
+    
     if (navigator.geolocation) {
         locationStatus.textContent = "Fetching location...";
         navigator.geolocation.getCurrentPosition(
@@ -39,8 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         locationStatus.textContent = "⚠ Geolocation not supported.";
     }
-
     
+
+  
     document.querySelectorAll('button[data-action]').forEach(button => {
         button.addEventListener('click', async function () {
             const action = this.getAttribute('data-action');
@@ -50,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            
             const allButtons = document.querySelectorAll('button[data-action]');
             allButtons.forEach(btn => btn.disabled = true);
 
@@ -74,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.success) {
                     resultDiv.innerHTML = `<p class="success"> ${result.message}</p>`;
-                    setTimeout(() => location.reload(), 1500); 
+                    setTimeout(() => location.reload(), 1500);
                 } else {
                     resultDiv.innerHTML = `<p class="error"> ${result.message}</p>`;
                     allButtons.forEach(btn => btn.disabled = false);
@@ -87,4 +105,5 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+    
 });

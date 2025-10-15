@@ -1,4 +1,6 @@
 <?php
+date_default_timezone_set('UTC');
+
 $secretsPath = __DIR__ . '/env.php'; 
 if (!file_exists($secretsPath)) {
     die('Configuration error: missing enb.php file.');

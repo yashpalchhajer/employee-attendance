@@ -73,7 +73,13 @@ $recentAttendance = $stmt->fetchAll();
             <?php if ($todayAttendance): ?>
             <div class="attendance-marked">
                 <h3>Last Action Today: <?php echo ucfirst(str_replace('_',' ',$todayAttendance['type'])); ?></h3>
-                <p><strong>Time:</strong> <?php echo date('h:i:s A', strtotime($todayAttendance['time'])); ?></p>
+                <p><strong>Time:</strong>
+                    <?php
+                        $utcTime = new DateTime($todayAttendance['time'], new DateTimeZone('UTC'));
+                        $utcTime->setTimezone(new DateTimeZone('Asia/Kolkata'));
+                        echo $utcTime->format('h:i:s A');
+                    ?>
+                </p>
                 <p><strong>Location:</strong>
                     <?php 
                         if ($todayAttendance['location_address']) {
@@ -87,7 +93,6 @@ $recentAttendance = $stmt->fetchAll();
                 </p>
             </div>
             <?php endif; ?>
-
 
             <div class="attendance-form mt-3">
                 <form id="attendanceForm" method="POST">
@@ -120,7 +125,13 @@ $recentAttendance = $stmt->fetchAll();
                             <tr>
                                 <td><?php echo date('M d, Y', strtotime($record['date'])); ?></td>
                                 <td><?php echo ucfirst(str_replace('_',' ',$record['type'])); ?></td>
-                                <td><?php echo date('h:i:s A', strtotime($record['time'])); ?></td>
+                                <td>
+                                    <?php
+                                        $utcTime = new DateTime($record['time'], new DateTimeZone('UTC'));
+                                        $utcTime->setTimezone(new DateTimeZone('Asia/Kolkata'));
+                                        echo $utcTime->format('h:i:s A');
+                                    ?>
+                                </td>
                                 <td>
                                     <?php
                                         if ($record['location_address']) {
@@ -144,7 +155,6 @@ $recentAttendance = $stmt->fetchAll();
 </div>
 
 <script src="assets/js/dashboard.js"></script>
-
 
 <script>
 function updateCurrentTime() {
