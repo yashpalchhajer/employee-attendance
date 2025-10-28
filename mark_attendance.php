@@ -19,7 +19,6 @@ if (!$action || !in_array($action, $validActions)) {
     echo json_encode(['success'=>false,'message'=>'Invalid attendance action']);
     exit();
 }
-
 if ($current_lat === null || $current_lon === null) {
     echo json_encode(['success'=>false,'message'=>'Employee current location required']);
     exit();
@@ -46,13 +45,12 @@ try {
          cos(deg2rad($reg_lat)) * cos(deg2rad($current_lat)) *
          sin($dLon / 2) * sin($dLon / 2);
     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-    $distance = $earth_radius * $c;
+    $distance = $earth_radius * $c; 
 
     if ($distance > 100) {
         echo json_encode(['success' => false, 'message' => "You are outside the 100-meter radius from your assigned location. Distance: " . round($distance, 2) . " meters."]);
         exit();
     }
-
     
     $stmt = $pdo->prepare("SELECT type FROM attendance WHERE user_id=? AND date=CURDATE() ORDER BY id DESC LIMIT 1");
     $stmt->execute([$_SESSION['user_id']]);
@@ -82,8 +80,30 @@ try {
     $todayUTC = $utcNow->format('Y-m-d');
     $timeUTC = $utcNow->format('H:i:s');
 
-    $stmt = $pdo->prepare("INSERT INTO attendance (user_id, date, type, time, latitude, longitude, location_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-    $stmt->execute([$_SESSION['user_id'], $todayUTC, $action, $timeUTC, $current_lat, $current_lon, $locationAddress]);
+    
+    // $stmt = $pdo->prepare("
+    //     INSERT INTO attendance 
+    //     (user_id, date, type, time, latitude, longitude, distance_meters, location_address, created_at)
+    //     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    // ");
+    // $stmt->execute([
+    //     $_SESSION['user_id'],
+    //     $todayUTC,
+    //     $action,
+    //     $timeUTC,
+    //     $current_lat,
+    //     $current_lon,
+    //     round($distance, 2),
+    //     $locationAddress
+    // ]);
+
+    $stmt = $pdo->prepare("
+        INSERT INTO attendance 
+        (user_id, date, type, time, latitude, longitude, distance_meters, location_address, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt->execute([
+        $_SESSION['user_id'], $todayUTC, $action, $timeUTC,
+        $current_lat, $current_lon, $distance, $locationAddress]);
 
     echo json_encode([
         'success' => true,
